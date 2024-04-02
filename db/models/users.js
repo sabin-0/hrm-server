@@ -16,13 +16,18 @@ const users = new mongoose.Schema({
     },
     password : {
         type : String,
-        unique : true
+        required : true
     },
     phone : {
         type : Number,
         unique : true,
-        require : true
-    }
+        required : true
+    },
+    user_type : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user_types"
+    },
+    password_token: "string"
 });
 
 module.exports = mongoose.model("users",users);
