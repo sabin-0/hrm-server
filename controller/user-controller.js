@@ -173,17 +173,68 @@ exports.fetchOne = async function(req, res) {
     
 };
 
+// const authHeader = req.headers["authorization"];
+        // const token = authHeader ? authHeader.split(" ")[1] : null;
+
+        // if(!token) {
+        //     response = error_function({
+        //         statusCode : 400,
+        //         message : "Token is required"
+        //     });
+        //     res.status(response.statusCode).send(response);
+        //     return;
+        // }
+
+        // let decoded = jwt.decode(token);
+
 
 //FETCH ALL USERS
 exports.getUserData = async function(req, res) {
     try {
+        console.log("Reached fetch all");
 
-        let allUSers = await users.find({});
+        let count = Number(await users.countDocuments());
+
+        const pageNumber = Number(req.query.page)|| 1;
+        const pageSize = Number(req.query.pageSize) || count;
+
+        let keyword = req.query.keyword;
+
+        let filters = [];
+
+        if (keyword) {
+            filters.push({
+                $or: [
+                    { "firstname": { $regex: keyword, $options: "i" }},
+                    { "lastname": { $regex: keyword, $options: "i"}},
+                    // { "phone": { $regex: keyword, $options: "i"}}
+                ]
+            });
+        }
+
+        let allUSers = await users
+            .find( filters.length > 0 ? { $and: filters } : null )
+            .skip(pageSize * (pageNumber - 1))
+            .limit(pageSize);
+
 
         if(allUSers.length>0) {
+
+            let totalCount = await users.countDocuments( filters.length > 0 ? { $and: filters } : null );
+            let totalPages = Math.ceil(totalCount/pageSize);
+            console.log("total count : ", totalCount);
+
+            let data = {
+                count: totalCount,
+                totalPages: totalPages,
+                currentPage: pageNumber,
+                datas: allUSers
+            };
+            console.log("data : ",data);
+
             let response = success_function({
                 statusCode : 200,
-                data : allUSers,
+                data : data,
                 message : "All users retrieved successfully"
             });
             res.status(response.statusCode).send(response);
